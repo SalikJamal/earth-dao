@@ -8,12 +8,17 @@ const App = () => {
     const [memberTokenAmounts, setMemberTokenAmounts] = useState([])
     // The array holding all of our members addresses.
     const [memberAddresses, setMemberAddress] = useState([])
+    // The array holding all of our proposals.
+    const [proposals, setProposals] = useState([])
+    const [isVoting, setIsVoting] = useState(false)
+    const [hasVoted, setHasVoted] = useState(false)
 
     const address = useAddress()
 
     // Initialize the contract
     const { contract: editionDrop } = useContract(process.env.REACT_APP_EDITION_DROP_CONTRACT_ADDR, 'edition-drop')
     const { contract: token } = useContract(process.env.REACT_APP_TOKEN_CONTRACT_ADDR, 'token')
+    const { contract: vote } = useContract(process.env.REACT_APP_VOTING_CONTRACT_ADDR, 'vote')
     // Hook to check if user has NFT
     const { data: nftBalance } = useNFTBalance(editionDrop, address, 0)
 
@@ -70,6 +75,49 @@ const App = () => {
 
         getAllBalances()
     }, [hasClaimedNFT, token?.history])
+
+    // Retrieve all our existing proposals from the contract.
+    useEffect(() => {
+        if(!hasClaimedNFT) return
+
+        // A simple call to vote.getAll() to grab the proposals
+        const getAllProposals = async () => {
+            try {
+                const proposals = await vote.getAll()
+                setProposals(proposals)
+                console.log(`Proposals: ${JSON.stringify(proposals)}`)
+            } catch(err) {
+                console.error(`Failed to get proposals: ${err}`)
+            }
+        }
+
+        getAllProposals()
+    }, [hasClaimedNFT, vote])
+
+    // We also have to check if user has already voted.
+    useEffect(() => {
+        if(!hasClaimedNFT) return
+        // If we haven't finished retrieving the proposals from the useEffect above
+        // then we can't check if the user voted yet!
+        if(!proposals.length) return
+
+        const checkIfUserhasVoted = async () => {
+            try {
+                const hasVoted = await vote.hasVoted(proposals[0].proposalId, address)
+                setHasVoted(hasVoted)
+
+                if(hasVoted) {
+                    console.log('User has already voted')
+                } else {
+                    console.log('User has not voted yet')
+                }
+            } catch(err) {
+                console.error(`Failed to check if user has voted: ${err}`)
+            }
+        }
+        
+        checkIfUserhasVoted()
+    }, [hasClaimedNFT, proposals, address, vote])
 
     if(hasClaimedNFT) {
         return (
