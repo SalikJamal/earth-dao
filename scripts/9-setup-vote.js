@@ -1,4 +1,3 @@
-import { TokenMintInputSchema } from '@thirdweb-dev/sdk'
 import sdk from './1-initialize-sdk.js'
 
 
