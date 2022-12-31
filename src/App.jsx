@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useAddress, useContract, useNFTBalance, Web3Button } from "@thirdweb-dev/react"
+import { useAddress, useContract, useNFTBalance, Web3Button, useNetwork } from "@thirdweb-dev/react"
 import { AddressZero } from '@ethersproject/constants'
+import { ChainId } from '@thirdweb-dev/sdk'
 
 
 const App = () => {
@@ -15,6 +16,7 @@ const App = () => {
     const [hasVoted, setHasVoted] = useState(false)
 
     const address = useAddress()
+    const network = useNetwork()
 
     // Initialize the contract
     const { contract: editionDrop } = useContract(process.env.REACT_APP_EDITION_DROP_CONTRACT_ADDR, 'edition-drop')
@@ -133,7 +135,6 @@ const App = () => {
             try {
                 const memberAddresses = await editionDrop?.history.getAllClaimerAddresses(0)
                 setMemberAddress(memberAddresses)
-                console.log(`Member addresses: ${memberAddresses}`)
             } catch(err) {
                 console.log(`Failed to get member list: ${err}`)
             }
@@ -151,7 +152,6 @@ const App = () => {
             try {
                 const amounts = await token?.history.getAllHolderBalances()
                 setMemberTokenAmounts(amounts)
-                console.log(`Amounts: ${JSON.stringify(amounts)}`)
             } catch(err) {
                 console.log(`Failed to get member balances: ${err}`)
             }
@@ -169,7 +169,6 @@ const App = () => {
             try {
                 const proposals = await vote.getAll()
                 setProposals(proposals)
-                console.log(`Proposals: ${JSON.stringify(proposals)}`)
             } catch(err) {
                 console.error(`Failed to get proposals: ${err}`)
             }
@@ -189,12 +188,6 @@ const App = () => {
             try {
                 const hasVoted = await vote.hasVoted(proposals[0].proposalId, address)
                 setHasVoted(hasVoted)
-
-                if(hasVoted) {
-                    console.log('User has already voted')
-                } else {
-                    console.log('User has not voted yet')
-                }
             } catch(err) {
                 console.error(`Failed to check if user has voted: ${err}`)
             }
@@ -202,6 +195,15 @@ const App = () => {
         
         checkIfUserhasVoted()
     }, [hasClaimedNFT, proposals, address, vote])
+
+    if(address && network?.[0].data.chain.id !== ChainId.Goerli) {
+        return (
+            <div className='unsupported-network'>
+                <h2>Please connect to Goerli Network</h2>
+                <p>This Dapp currently only works on Goerli network, please switch network in your connect wallet.</p>
+            </div>
+        )
+    }
 
     if(hasClaimedNFT) {
         return (
