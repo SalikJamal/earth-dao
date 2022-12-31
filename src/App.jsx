@@ -55,7 +55,7 @@ const App = () => {
                 proposalId: proposal.proposalId,
                 vote: 2 // Abstain by default
             }
-            proposal.votes.foreach(vote => {
+            proposal.votes.forEach(vote => {
                 const elem = document.getElementById(`${proposal.proposalId}-${vote.type}`)
                 if(elem.checked) {
                     voteResult.vote = vote.type
